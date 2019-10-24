@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:infinite_list/bloc/bloc.dart';
 
 abstract class DateEvent extends Equatable {
   @override
@@ -7,7 +6,7 @@ abstract class DateEvent extends Equatable {
 }
 
 class GenerateEvent extends DateEvent {
-  final int pageDate;
+  final DateTime startDate;
 
-  GenerateEvent(this.pageDate);
+  GenerateEvent(this.startDate);
 }

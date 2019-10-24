@@ -12,26 +12,17 @@ class DateBloc extends Bloc<DateEvent, DateState> {
   Stream<DateState> mapEventToState(
     DateEvent event,
   ) async* {
-    final currentState = state;
     if (event is GenerateEvent) {
-      if (currentState is InitialDateState) {
-        final dates = await _fetchDates(0);
-        yield GenerateDate(dates: dates);
-      }
-      if (currentState is GenerateDate) {
-        print("load next : ${event.pageDate}");
-        final dates = await _fetchDates(event.pageDate);
-        yield GenerateDate(dates: dates);
-      }
+      final dates = await _fetchDates(event.startDate);
+      yield GenerateDate(dates: dates);
     }
   }
 
-  Future<List<DateTime>> _fetchDates(int page) async {
+  Future<List<DateTime>> _fetchDates(DateTime startDate) async {
     await Future.delayed(Duration(seconds: 1));
 
     return List.generate(_pageDateGenerate, (index) {
-      DateTime date =
-          DateTime.now().add(Duration(days: index + page * _pageDateGenerate));
+      DateTime date = startDate.add(Duration(days: index));
       return date;
     });
   }

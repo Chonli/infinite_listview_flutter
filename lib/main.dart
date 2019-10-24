@@ -37,7 +37,6 @@ class _MyHomePageState extends State<MyHomePage> {
   List<DateTime> _listDates = [];
   bool _isList = true;
   bool _isLoading = false;
-  int _currentPage = 1;
   ScrollController _scrollController;
   DateBloc _dateBloc;
 
@@ -46,7 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _dateBloc = BlocProvider.of<DateBloc>(context);
-    _dateBloc.add(GenerateEvent(_currentPage++));
+    _dateBloc.add(GenerateEvent(DateTime.now()));
     super.initState();
   }
 
@@ -63,7 +62,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (!_isLoading && (maxScroll - currentScroll <= 200.0)) {
       print("load next");
       _isLoading = true;
-      _dateBloc.add(GenerateEvent(_currentPage++));
+      _dateBloc.add(GenerateEvent(_listDates.last.add(Duration(days: 1))));
     }
   }
 
@@ -94,7 +93,8 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       } else if (state is GenerateDate) {
         _isLoading = false;
-        _listDates.addAll(state.dates);
+        if (_listDates.isEmpty || _listDates.last.isBefore(state.dates.first))
+          _listDates.addAll(state.dates);
         if (_listDates.isEmpty) {
           return Center(
             child: Text('Empty result'),
@@ -113,21 +113,19 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  return index <= _listDates.length
-                      ? GridTile(
-                          child: Card(
-                              color: Colors.blue,
-                              child: Center(
-                                  child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                    Text(
-                                        '${DateFormat('dd-MM-yyyy').format(_listDates[index])}'),
-                                    Text(DateFormat('EEEE')
-                                        .format(_listDates[index])),
-                                  ]))))
-                      : Container();
+                  return GridTile(
+                      child: Card(
+                          color: Colors.blue,
+                          child: Center(
+                              child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                Text(
+                                    '${DateFormat('dd-MM-yyyy').format(_listDates[index])}'),
+                                Text(DateFormat('EEEE')
+                                    .format(_listDates[index])),
+                              ]))));
                 },
                 addAutomaticKeepAlives: true,
                 addRepaintBoundaries: true,
@@ -147,17 +145,4 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
   }
-
-  // Widget _buildGridPage(List page) {
-  //   return GridTile(
-  //       child: Card(
-  //           color: Colors.blue,
-  //           child: Center(
-  //               child: Column(
-  //                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-  //                   children: [
-  //                 Text(dateInfo['date']),
-  //                 Text(dateInfo['dayofweek']),
-  //               ]))));
-  // }
 }
