@@ -1,3 +1,7 @@
+import 'package:flutter/rendering.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:infinite_list/bloc/bloc.dart';
+import 'package:infinite_list/bloc/date_bloc.dart';
 import 'package:intl/intl.dart';
 
 import 'package:flutter/material.dart';
@@ -13,7 +17,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Infinite List'),
+      home: BlocProvider(
+          builder: (context) => DateBloc(),
+          child: MyHomePage(title: 'Infinite List')),
     );
   }
 }
@@ -28,17 +34,37 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  _fetchDates(int pageNumber) async {
-    await Future.delayed(Duration(seconds: 1));
+  List<DateTime> _listDates = [];
+  bool _isList = true;
+  bool _isLoading = false;
+  int _currentPage = 1;
+  ScrollController _scrollController;
+  DateBloc _dateBloc;
 
-    return List.generate(30, (index) {
-      DateTime date =
-          DateTime.now().add(Duration(days: index + (30 * pageNumber)));
-      return {
-        'date': '$index - ${DateFormat('dd-MM-yyyy').format(date)}',
-        'dayofweek': DateFormat('EEEE').format(date),
-      };
-    });
+  @override
+  void initState() {
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+    _dateBloc = BlocProvider.of<DateBloc>(context);
+    _dateBloc.add(GenerateEvent(_currentPage++));
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    print("onScroll $maxScroll $currentScroll");
+    if (!_isLoading && (maxScroll - currentScroll <= 200.0)) {
+      print("load next");
+      _isLoading = true;
+      _dateBloc.add(GenerateEvent(_currentPage++));
+    }
   }
 
   @override
@@ -46,42 +72,92 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
         appBar: AppBar(
           title: Text(widget.title),
+          actions: <Widget>[
+            IconButton(
+              icon: Icon(_isList ? Icons.view_module : Icons.view_list),
+              onPressed: () {
+                setState(() {
+                  _isList = !_isList;
+                });
+              },
+            )
+          ],
         ),
-        body: ListView.builder(itemBuilder: (context, pageNumber) {
-          return FutureBuilder(
-            future: this._fetchDates(pageNumber),
-            builder: (context, snapshot) {
-              switch (snapshot.connectionState) {
-                case ConnectionState.none:
-                case ConnectionState.waiting:
-                  return Align(
-                      alignment: Alignment.center,
-                      child: CircularProgressIndicator());
-                case ConnectionState.done:
-                case ConnectionState.active:
-                  if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  } else {
-                    var pageData = snapshot.data;
-
-                    return this._buildPage(pageData);
-                  }
-                  break;
-              }
-            },
-          );
-        }));
+        body: _buildGridView(context));
   }
 
-  Widget _buildPage(List page) {
-    return ListView(
-        shrinkWrap: true,
-        primary: false,
-        children: page.map((dateInfo) {
-          return ListTile(
-            title: Text(dateInfo['date']),
-            subtitle: Text(dateInfo['dayofweek']),
+  Widget _buildGridView(BuildContext context) {
+    return BlocBuilder<DateBloc, DateState>(builder: (context, state) {
+      if (state is InitialDateState) {
+        return Center(
+          child: CircularProgressIndicator(),
+        );
+      } else if (state is GenerateDate) {
+        _isLoading = false;
+        _listDates.addAll(state.dates);
+        if (_listDates.isEmpty) {
+          return Center(
+            child: Text('Empty result'),
           );
-        }).toList());
+        }
+        print("receive ${state.dates.length}");
+        return CustomScrollView(
+          controller: _scrollController,
+          slivers: <Widget>[
+            SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisSpacing: 1,
+                mainAxisSpacing: 1,
+                crossAxisCount: _isList ? 1 : 3,
+                childAspectRatio: _isList ? 4 : 2,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  return index <= _listDates.length
+                      ? GridTile(
+                          child: Card(
+                              color: Colors.blue,
+                              child: Center(
+                                  child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                    Text(
+                                        '${DateFormat('dd-MM-yyyy').format(_listDates[index])}'),
+                                    Text(DateFormat('EEEE')
+                                        .format(_listDates[index])),
+                                  ]))))
+                      : Container();
+                },
+                addAutomaticKeepAlives: true,
+                addRepaintBoundaries: true,
+                addSemanticIndexes: true,
+                childCount: _listDates.length,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Container(
+                padding: EdgeInsets.all(15),
+                alignment: Alignment.center,
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ],
+        );
+      }
+    });
   }
+
+  // Widget _buildGridPage(List page) {
+  //   return GridTile(
+  //       child: Card(
+  //           color: Colors.blue,
+  //           child: Center(
+  //               child: Column(
+  //                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //                   children: [
+  //                 Text(dateInfo['date']),
+  //                 Text(dateInfo['dayofweek']),
+  //               ]))));
+  // }
 }
