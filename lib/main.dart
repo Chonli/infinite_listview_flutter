@@ -115,7 +115,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 (context, index) {
                   return GridTile(
                       child: Card(
-                          color: Colors.blue,
+                          color: _isWeekend(_listDates[index])
+                              ? Colors.green
+                              : Colors.blue,
                           child: Center(
                               child: Column(
                                   mainAxisAlignment:
@@ -144,5 +146,9 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       }
     });
+  }
+
+  bool _isWeekend(DateTime dt) {
+    return dt.weekday == 7 || dt.weekday == 6;
   }
 }
