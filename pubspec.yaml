@@ -23,6 +23,7 @@ dependencies:
   intl: ^0.16.0
   flutter_bloc: ^1.0.0  
   equatable: ^0.6.1
+  animations: ^1.0.0+5
 
 dev_dependencies:
   flutter_test:

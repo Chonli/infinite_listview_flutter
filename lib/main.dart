@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:infinite_list/bloc/bloc.dart';
@@ -113,21 +114,32 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  return GridTile(
-                      child: Card(
-                          color: _isWeekend(_listDates[index])
-                              ? Colors.green
-                              : Colors.blue,
-                          child: Center(
-                              child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                Text(
-                                    '${DateFormat('dd-MM-yyyy').format(_listDates[index])}'),
-                                Text(DateFormat('EEEE')
-                                    .format(_listDates[index])),
-                              ]))));
+                  return OpenContainer(
+                    transitionType: ContainerTransitionType.fadeThrough,
+                    openBuilder:
+                        (BuildContext context, VoidCallback openContainer) {
+                      return DetailCard(date: _listDates[index]);
+                    },
+                    transitionDuration: Duration(milliseconds: 1000),
+                    closedBuilder:
+                        (BuildContext _, VoidCallback openContainer) {
+                      return GridTile(
+                          child: Card(
+                              color: _isWeekend(_listDates[index])
+                                  ? Colors.green
+                                  : Colors.blue,
+                              child: Center(
+                                  child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                    Text(
+                                        '${DateFormat('dd-MM-yyyy').format(_listDates[index])}'),
+                                    Text(DateFormat('EEEE')
+                                        .format(_listDates[index])),
+                                  ]))));
+                    },
+                  );
                 },
                 addAutomaticKeepAlives: true,
                 addRepaintBoundaries: true,
@@ -147,8 +159,28 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
   }
+}
 
-  bool _isWeekend(DateTime dt) {
-    return dt.weekday == 7 || dt.weekday == 6;
+class DetailCard extends StatelessWidget {
+  final DateTime date;
+  const DetailCard({Key key, this.date}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${DateFormat('dd-MM-yyyy').format(date)}'),
+        backgroundColor: _isWeekend(date) ? Colors.green : Colors.blue,
+      ),
+      body: Center(
+        child: Text(
+          DateFormat('EEEE').format(date),
+        ),
+      ),
+    );
   }
+}
+
+bool _isWeekend(DateTime dt) {
+  return dt.weekday == 7 || dt.weekday == 6;
 }
